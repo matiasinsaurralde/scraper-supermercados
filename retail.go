@@ -12,12 +12,9 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-const(
-	S6StartURL = "http://www.superseis.com.py/default.aspx"
-)
-
-type S6Scraper struct {
-	browser *browser.Browser
+type RetailScraper struct {
+	StartURL string
+	browser  *browser.Browser
 
 	categories map[int]string
 	products   []Product
@@ -26,9 +23,9 @@ type S6Scraper struct {
 	productIDExpr  *regexp.Regexp
 }
 
-func (s *S6Scraper) Init() error {
+func (s *RetailScraper) Init() error {
 	s.browser = surf.NewBrowser()
-	err := s.browser.Open(S6StartURL)
+	err := s.browser.Open(s.StartURL)
 	if err != nil {
 		return err
 	}
@@ -38,7 +35,7 @@ func (s *S6Scraper) Init() error {
 	return nil
 }
 
-func (s *S6Scraper) navigate(pagerElem *goquery.Selection) (href string, keepBrowsing bool) {
+func (s *RetailScraper) navigate(pagerElem *goquery.Selection) (href string, keepBrowsing bool) {
 	pagerElem.Find("div *").Each(func(_ int, e *goquery.Selection) {
 		href, _ = e.Attr("href")
 		if strings.Contains(e.Text(), "Siguiente") {
@@ -49,7 +46,7 @@ func (s *S6Scraper) navigate(pagerElem *goquery.Selection) (href string, keepBro
 	return href, keepBrowsing
 }
 
-func (s *S6Scraper) getProductID(url string) (int, error) {
+func (s *RetailScraper) getProductID(url string) (int, error) {
 	matches := s.productIDExpr.FindAllStringSubmatch(url, 10)
 	if len(matches) != 1 {
 		return -1, errors.New("Couldn't match product ID")
@@ -62,7 +59,7 @@ func (s *S6Scraper) getProductID(url string) (int, error) {
 	return n, nil
 }
 
-func (s *S6Scraper) getCategoryID(url string) (int, error) {
+func (s *RetailScraper) getCategoryID(url string) (int, error) {
 	matches := s.categoryIDExpr.FindAllStringSubmatch(url, 10)
 	if len(matches) != 1 {
 		return -1, errors.New("Couldn't match product ID")
@@ -75,7 +72,7 @@ func (s *S6Scraper) getCategoryID(url string) (int, error) {
 	return n, nil
 }
 
-func (s *S6Scraper) getProductPrice(priceElem *goquery.Selection) (int, error) {
+func (s *RetailScraper) getProductPrice(priceElem *goquery.Selection) (int, error) {
 	text := priceElem.Text()
 	if text == "" {
 		return -1, errors.New("Empty price element text")
@@ -85,7 +82,7 @@ func (s *S6Scraper) getProductPrice(priceElem *goquery.Selection) (int, error) {
 	return strconv.Atoi(price)
 }
 
-func (s *S6Scraper) Fetch(productFn func(*Product)) {
+func (s *RetailScraper) Fetch(productFn func(*Product)) {
 	s.browser.Find("a").Each(func(_ int, catElements *goquery.Selection) {
 		catURL, _ := catElements.Attr("href")
 		if !strings.Contains(catURL, "/category/") {
