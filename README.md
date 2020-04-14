@@ -13,4 +13,5 @@ Pequeño programa para realizar scraping de precios de supermercados de Paraguay
 $ go install github.com/matiasinsaurralde/scraper-supermercados
 $ scraper-supermercados casarica casarica.txt 
 $ scraper-supermercados s6 s6.txt
+$ scraper-supermercados stock stock.txt
 ```

@@ -34,7 +34,16 @@ func init() {
 func NewScraper(typ string) (Scraper, error) {
 	switch typ {
 	case "s6":
-		scraper := &S6Scraper{}
+
+		scraper := &RetailScraper{StartURL: "http://www.superseis.com.py/default.aspx"}
+		err := scraper.Init()
+		if err != nil {
+			return nil, err
+		}
+		return scraper, nil
+	case "stock":
+
+		scraper := &RetailScraper{StartURL: "http://www.stock.com.py/default.aspx"}
 		err := scraper.Init()
 		if err != nil {
 			return nil, err
