@@ -14,6 +14,7 @@ import (
 
 type RetailScraper struct {
 	StartURL string
+	productBrowser  *browser.Browser
 	browser  *browser.Browser
 
 	categories map[int]string
@@ -32,6 +33,28 @@ func (s *RetailScraper) Init() error {
 	s.categories = make(map[int]string)
 	s.productIDExpr = regexp.MustCompile(`\/products\/(\d+)-`)
 	s.categoryIDExpr = regexp.MustCompile(`\/category\/(\d+)-`)
+	return nil
+}
+
+func(s *RetailScraper) getSKU(p *Product) (error) {
+	if s.productBrowser == nil {
+		s.productBrowser = surf.NewBrowser()
+	}
+	err := s.browser.Open(p.URL)
+	if err != nil {
+		return err
+	}
+	skuElemText :=  s.browser.Find(".sku").Text()
+	if !strings.Contains(skuElemText, "Código de Barras") {
+		return errSKUMatch
+	}
+	splits := strings.Split(skuElemText, ":")
+	if len(splits) < 2 {
+		return errSKUMatch
+	}
+	sku := strings.TrimSpace(splits[1])
+	sku = strings.ReplaceAll(sku, "\n", "")
+	p.SKU = sku
 	return nil
 }
 
@@ -128,6 +151,10 @@ func (s *RetailScraper) Fetch(productFn func(*Product)) {
 					Price:       price,
 					CategoryID:  catID,
 					CategoryURL: catURL,
+				}
+				err = s.getSKU(p)
+				if err != nil {
+					log.Error(err)
 				}
 				productFn(p)
 			})

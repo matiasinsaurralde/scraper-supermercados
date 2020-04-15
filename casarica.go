@@ -2,22 +2,29 @@ package main
 
 import (
 	"errors"
-	"strconv"
-	"strings"
-
 	"github.com/PuerkitoBio/goquery"
 	"github.com/headzoo/surf"
 	"github.com/headzoo/surf/browser"
 	log "github.com/sirupsen/logrus"
+	"regexp"
+	"strconv"
+	"strings"
 )
 
 const(
 	CRStartURL = "https://www.casarica.com.py/"
 )
 
+var(
+	errSKUMatch = errors.New("No se pudo obtener SKU")
+)
+
 type CasaRicaScraper struct {
 	browser *browser.Browser
+	productBrowser *browser.Browser
 	ids map[int]int
+
+	skuExpr *regexp.Regexp
 }
 
 func (s *CasaRicaScraper) Init() error {
@@ -27,6 +34,31 @@ func (s *CasaRicaScraper) Init() error {
 		return err
 	}
 	s.ids = make(map[int]int)
+	s.skuExpr = regexp.MustCompile(`"sku": "(.*?)"`)
+	return nil
+}
+
+func(s *CasaRicaScraper) getSKU(p *Product) (error) {
+	if s.productBrowser == nil {
+		s.productBrowser = surf.NewBrowser()
+	}
+	err := s.browser.Open(p.URL)
+	if err != nil {
+		return err
+	}
+	head, err :=  s.browser.Find("head").Html()
+	if err != nil {
+		return err
+	}
+	occurs := s.skuExpr.FindAllStringSubmatch(head, -1)
+	if len(occurs) == 0 {
+		return errSKUMatch
+	}
+	submatch := occurs[0]
+	if len(submatch) < 2 {
+		return errSKUMatch
+	}
+	p.SKU = strings.TrimSpace(submatch[1])
 	return nil
 }
 
@@ -121,6 +153,10 @@ func (s *CasaRicaScraper) Fetch(productFn func(*Product)) {
 					CategoryID:  0,
 					CategoryURL: catURL,
 					PerKg:       perKg,
+				}
+				err = s.getSKU(product)
+				if err != nil {
+					log.Error(err)
 				}
 				productFn(product)
 			})
