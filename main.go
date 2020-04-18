@@ -23,7 +23,7 @@ type Product struct {
 	CategoryID  int    `json:"category_id"`
 	CategoryURL string `json:"category_link"`
 	PerKg       bool   `json:"per_kg"`
-	SKU string `json:"sku"`
+	SKU         string `json:"sku"`
 }
 
 func init() {
@@ -51,6 +51,13 @@ func NewScraper(typ string) (Scraper, error) {
 		return scraper, nil
 	case "casarica":
 		scraper := &CasaRicaScraper{}
+		err := scraper.Init()
+		if err != nil {
+			return nil, err
+		}
+		return scraper, nil
+	case "arete":
+		scraper := &AreteScraper{}
 		err := scraper.Init()
 		if err != nil {
 			return nil, err
