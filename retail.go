@@ -152,11 +152,13 @@ func (s *RetailScraper) Fetch(productFn func(*Product)) {
 					CategoryID:  catID,
 					CategoryURL: catURL,
 				}
-				err = s.getSKU(p)
-				if err != nil {
-					log.Error(err)
-				}
-				productFn(p)
+				go func(p *Product) {
+					err = s.getSKU(p)
+					if err != nil {
+						log.Error(err)
+					}
+					productFn(p)
+				}(p)
 			})
 			nextHref, keepBrowsing := s.navigate(pagerElem)
 			if !keepBrowsing {
